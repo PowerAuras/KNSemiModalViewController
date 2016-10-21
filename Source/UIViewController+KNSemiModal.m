@@ -128,7 +128,8 @@ const struct KNSemiModalOptionKeys KNSemiModalOptionKeys = {
 	semiView.hidden = YES;
 	UIGraphicsBeginImageContextWithOptions(target.bounds.size, YES, [[UIScreen mainScreen] scale]);
     if ([target respondsToSelector:@selector(drawViewHierarchyInRect:afterScreenUpdates:)]) {
-        [target drawViewHierarchyInRect:target.bounds afterScreenUpdates:YES];
+        //用这个方法在context中渲染一副view的快照。如果快照丢失了图片数据则返回 NO，完成渲染快照则返回 YES。当afterScreenUpdates参数值为true时，这两个方法能够强制视图立刻更新内容，同时返回更新后的视图内容。afterScreenUpdates改为NO，否则ASValueTrackingSlider的popUpView会立刻移动到value位置
+        [target drawViewHierarchyInRect:target.bounds afterScreenUpdates:NO];
     } else {
         [target.layer renderInContext:UIGraphicsGetCurrentContext()];
     }
