@@ -315,6 +315,18 @@ const struct KNSemiModalOptionKeys KNSemiModalOptionKeys = {
 
 -(void)dismissSemiModalViewWithCompletion:(void (^)(void))completion {
     // Look for presenting controller if available
+    //立刻调用dismissBlock 而不是动画完成后调用
+    UIView * target = [self parentTarget];
+    UIView * modal = [target viewWithTag:kSemiModalModalViewTag];
+    UIView * overlay = [target viewWithTag:kSemiModalOverlayTag];
+    UIButton * button = (UIButton*)[overlay viewWithTag:kSemiModalDismissButtonTag];
+    button.userInteractionEnabled = NO;
+    KNTransitionCompletionBlock dismissBlock = objc_getAssociatedObject(self, kSemiModalDismissBlock);
+    if (dismissBlock) {
+        dismissBlock();
+    }
+
+    
     UIViewController * prstingTgt = self;
     UIViewController * presentingController = objc_getAssociatedObject(prstingTgt.view, kSemiModalPresentingViewController);
     while (presentingController == nil && prstingTgt.parentViewController != nil) {
@@ -328,15 +340,11 @@ const struct KNSemiModalOptionKeys KNSemiModalOptionKeys = {
     }
 
     // Correct target for dismissal
-    UIView * target = [self parentTarget];
-    UIView * modal = [target viewWithTag:kSemiModalModalViewTag];
-    UIView * overlay = [target viewWithTag:kSemiModalOverlayTag];
 	NSUInteger transitionStyle = [[self ym_optionOrDefaultForKey:KNSemiModalOptionKeys.transitionStyle] unsignedIntegerValue];
 	NSTimeInterval duration = [[self ym_optionOrDefaultForKey:KNSemiModalOptionKeys.animationDuration] doubleValue];
 	UIViewController *vc = objc_getAssociatedObject(self, kSemiModalViewController);
-	KNTransitionCompletionBlock dismissBlock = objc_getAssociatedObject(self, kSemiModalDismissBlock);
-	
-	// Child controller containment
+
+    // Child controller containment
 	[vc willMoveToParentViewController:nil];
 	if ([vc respondsToSelector:@selector(beginAppearanceTransition:animated:)]) {
 		[vc beginAppearanceTransition:NO animated:YES]; // iOS 6
@@ -363,9 +371,7 @@ const struct KNSemiModalOptionKeys KNSemiModalOptionKeys = {
             [vc endAppearanceTransition];
         }
         
-        if (dismissBlock) {
-            dismissBlock();
-        }
+        
         
         objc_setAssociatedObject(self, kSemiModalDismissBlock, nil, OBJC_ASSOCIATION_COPY_NONATOMIC);
         objc_setAssociatedObject(self, kSemiModalViewController, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -385,6 +391,7 @@ const struct KNSemiModalOptionKeys KNSemiModalOptionKeys = {
             [[NSNotificationCenter defaultCenter] postNotificationName:kSemiModalDidHideNotification
                                                                 object:self];
             if (completion) {
+                button.userInteractionEnabled = YES;
                 completion();
             }
         }
